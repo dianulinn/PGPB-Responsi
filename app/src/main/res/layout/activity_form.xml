@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollView"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:padding="16dp"
+    tools:context=".FormActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/txtSampleName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="Titik: -"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/edtKodeSampel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Kode Sampel" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Jenis Penggunaan Lahan"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerPenggunaan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Kesesuaian"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerKesesuaian"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <EditText
+            android:id="@+id/edtCatatan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="top"
+            android:hint="Catatan (opsional)"
+            android:minLines="3" />
+
+        <!-- ========= BAGIAN FOTO DARI KAMERA ========= -->
+
+        <TextView
+            android:id="@+id/txtFotoLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Foto Sampel (opsional)"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnAmbilFoto"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Ambil Foto"
+            android:textAllCaps="false" />
+
+        <ImageView
+            android:id="@+id/imgPreviewFoto"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="8dp"
+            android:background="#22000000"
+            android:scaleType="centerCrop"
+            tools:src="@android:drawable/ic_menu_report_image" />
+
+        <!-- ========= TOMBOL SIMPAN ========= -->
+
+        <Button
+            android:id="@+id/btnSimpan"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Simpan" />
+
+    </LinearLayout>
+</ScrollView>
