@@ -6,11 +6,6 @@ data class SurveyResponse(
     val kodeSampel: String,
     val penggunaanLahan: String,
     val kesesuaian: String,
-    val catatan: String? = null,
-    val timestamp: Long = System.currentTimeMillis(),
+    val catatan: String?,
     val fotoUri: String?
-
-
 )
-
-

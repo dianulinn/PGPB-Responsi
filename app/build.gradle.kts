@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    // TIDAK pakai kapt lagi
 }
 
 android {
@@ -42,7 +41,6 @@ android {
 }
 
 dependencies {
-    // bawaan template
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -51,13 +49,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
-    // Fragment & Lifecycle (buat Fragment, coroutine, dsb.)
     implementation("androidx.fragment:fragment-ktx:1.8.3")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-
-    // MapLibre (peta, pengganti Google Maps)
     implementation("org.maplibre.gl:android-sdk:11.5.0")
-
-    // TIDAK ada lagi Room / kapt di sini
 }

@@ -91,7 +91,8 @@ class MapFragment : Fragment() {
 
     private val locationListener = object : LocationListener {
         override fun onLocationChanged(location: Location) {
-            val latLng = LatLng(location.latitude, location.longitude)
+            val latLng = LatLng(location.latitude,
+                location.longitude)
             userLocation = latLng
 
             val map = mapLibre ?: return
@@ -115,30 +116,25 @@ class MapFragment : Fragment() {
         override fun onProviderDisabled(provider: String) {}
     }
 
-    // ================== FILE PICKER ==================
-
-    // pilih PDF / KML
     private val pickData = registerForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         uri?.let { handleDataSelected(it) }
     }
 
-    // buat CSV
     private val createCsv = registerForActivityResult(
         ActivityResultContracts.CreateDocument("text/csv")
     ) { uri ->
         uri?.let { exportCsv(it) }
     }
 
-    // ================== LIFECYCLE FRAGMENT ==================
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentMapBinding.inflate(inflater, container, false)
+        _binding = FragmentMapBinding.inflate(inflater, container,
+            false)
         mapView = binding.mapView
         mapView.onCreate(savedInstanceState)
         return binding.root
@@ -164,7 +160,6 @@ class MapFragment : Fragment() {
             createCsv.launch("survey_kesesuaian.csv")
         }
 
-        // tombol Lokasi → zoom ke posisi user
         binding.btnMyLocation.setOnClickListener {
             val loc = userLocation
             val map = mapLibre
@@ -181,7 +176,6 @@ class MapFragment : Fragment() {
             }
         }
 
-        // setup map
         mapView.getMapAsync { map ->
             mapLibre = map
 
@@ -191,20 +185,17 @@ class MapFragment : Fragment() {
                 ensureLocationPermission()
             }
 
-            // long click → tambah titik manual
             map.addOnMapLongClickListener { latLng: LatLng ->
                 addSamplePointAt(latLng)
                 true
             }
 
-            // klik marker → pilih titik
             map.setOnMarkerClickListener { marker ->
                 handleMarkerClick(marker)
                 true
             }
         }
 
-        // buka form kesesuaian → SEKARANG buka Activity
         binding.btnOpenForm.setOnClickListener {
             val point = selectedPoint ?: return@setOnClickListener
 
@@ -215,7 +206,6 @@ class MapFragment : Fragment() {
             )
         }
 
-        // navigasi dalam app → rute jaringan jalan (OSRM)
         binding.btnNavigate.setOnClickListener {
             val point = selectedPoint
             if (point == null) {
@@ -230,8 +220,6 @@ class MapFragment : Fragment() {
         }
     }
 
-    // ================== HANDLE DATA (PDF / KML) ==================
-
     private fun handleDataSelected(uri: Uri) {
         val displayName = queryFileName(uri) ?: ""
         val rawName = uri.lastPathSegment ?: ""
@@ -239,10 +227,6 @@ class MapFragment : Fragment() {
         val lower = name.lowercase()
 
         when {
-            lower.endsWith(".pdf") -> {
-                handlePdfSelected(uri, name.ifEmpty { "Peta PDF" })
-                return
-            }
             lower.endsWith(".kml") -> {
                 handleKmlSelected(uri, name.ifEmpty { "Layer KML" })
                 return
@@ -251,9 +235,6 @@ class MapFragment : Fragment() {
 
         val mime = requireContext().contentResolver.getType(uri) ?: ""
         when {
-            mime.contains("pdf") ->
-                handlePdfSelected(uri, name.ifEmpty { "Peta PDF" })
-
             mime.contains("kml") || mime.contains("xml") ->
                 handleKmlSelected(uri, name.ifEmpty { "Layer KML" })
 
@@ -265,93 +246,11 @@ class MapFragment : Fragment() {
         }
     }
 
-    private fun handlePdfSelected(uri: Uri, name: String) {
-        currentPdfUri = uri.toString()
-
-        val style = mapStyle ?: run {
-            Toast.makeText(requireContext(), "Map belum siap", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // 1. buka file
-        val pfd: ParcelFileDescriptor = try {
-            requireContext().contentResolver.openFileDescriptor(uri, "r")
-                ?: run {
-                    Toast.makeText(requireContext(), "Gagal membuka PDF", Toast.LENGTH_SHORT).show()
-                    return
-                }
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Error PDF: ${e.message}", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // 2. render halaman pertama
-        val renderer = PdfRenderer(pfd)
-        if (renderer.pageCount == 0) {
-            renderer.close()
-            pfd.close()
-            Toast.makeText(requireContext(), "PDF kosong", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val page = renderer.openPage(0)
-        val width = page.width
-        val height = page.height
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-        page.close()
-        renderer.close()
-        pfd.close()
-
-        // 3. bounding box geospasial PDF
-        val latNorth = -7.748432
-        val latSouth = -7.829432
-        val lonWest  = 110.370894
-        val lonEast  = 110.475918
-
-        val quad = LatLngQuad(
-            LatLng(latNorth, lonWest),
-            LatLng(latNorth, lonEast),
-            LatLng(latSouth, lonEast),
-            LatLng(latSouth, lonWest)
-        )
-
-        // 4. hapus layer/source lama
-        style.getLayer(pdfLayerId)?.let { style.removeLayer(it) }
-        style.getSource(pdfSourceId)?.let { style.removeSource(it) }
-
-        // 5. tambah sumber & layer
-        val imgSource = ImageSource(pdfSourceId, quad, bitmap)
-        style.addSource(imgSource)
-
-        val layer = RasterLayer(pdfLayerId, pdfSourceId)
-        style.addLayer(layer)
-
-        layer.setProperties(
-            PropertyFactory.rasterOpacity(0.9f)
-        )
-
-        // 6. fokus kamera ke area PDF
-        val bounds = LatLngBounds.Builder()
-            .include(LatLng(latNorth, lonWest))
-            .include(LatLng(latSouth, lonEast))
-            .build()
-
-        mapLibre?.animateCamera(
-            CameraUpdateFactory.newLatLngBounds(bounds, 50)
-        )
-
-        Toast.makeText(
-            requireContext(),
-            "Peta PDF \"$name\" ditampilkan",
-            Toast.LENGTH_SHORT
-        ).show()
-    }
-
     private fun handleKmlSelected(uri: Uri, name: String) {
         val input = requireContext().contentResolver.openInputStream(uri)
         if (input == null) {
-            Toast.makeText(requireContext(), "Gagal membuka KML", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Gagal membuka KML",
+                Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -359,7 +258,8 @@ class MapFragment : Fragment() {
 
         val map = mapLibre
         if (map == null) {
-            Toast.makeText(requireContext(), "Map belum siap", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Map belum siap",
+                Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -373,7 +273,8 @@ class MapFragment : Fragment() {
 
             map.addMarker(
                 MarkerOptions()
-                    .position(LatLng(stored.latitude, stored.longitude))
+                    .position(LatLng(stored.latitude,
+                        stored.longitude))
                     .title(stored.name)
                     .snippet("${stored.id}")
             )
@@ -450,7 +351,8 @@ class MapFragment : Fragment() {
 
     private fun queryFileName(uri: Uri): String? {
         val cr = requireContext().contentResolver
-        val cursor = cr.query(uri, null, null, null, null) ?: return null
+        val cursor = cr.query(uri, null, null,
+            null, null) ?: return null
         cursor.use {
             val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (idx >= 0 && cursor.moveToFirst()) {
@@ -460,14 +362,13 @@ class MapFragment : Fragment() {
         return null
     }
 
-    // ================== TITIK & MARKER ==================
-
     private fun loadExistingPoints() {
         val map = mapLibre ?: return
         DataStore.samplePoints.forEach { p ->
             map.addMarker(
                 MarkerOptions()
-                    .position(LatLng(p.latitude, p.longitude))
+                    .position(LatLng(p.latitude,
+                        p.longitude))
                     .title(p.name)
                     .snippet("${p.id}")
             )
@@ -518,8 +419,6 @@ class MapFragment : Fragment() {
         )
     }
 
-    // ================== IZIN & UPDATE LOKASI ==================
-
     private fun ensureLocationPermission() {
         val ctx = requireContext()
         val fine = ContextCompat.checkSelfPermission(
@@ -547,7 +446,8 @@ class MapFragment : Fragment() {
 
     private fun startLocationUpdates() {
         val ctx = requireContext()
-        locationManager = ctx.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager = ctx.getSystemService(Context.LOCATION_SERVICE)
+                as LocationManager
 
         val hasFine = ContextCompat.checkSelfPermission(
             ctx,
@@ -563,8 +463,10 @@ class MapFragment : Fragment() {
             return
         }
 
-        val gpsEnabled = locationManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) == true
-        val netEnabled = locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true
+        val gpsEnabled = locationManager?.isProviderEnabled(
+            LocationManager.GPS_PROVIDER) == true
+        val netEnabled = locationManager?.isProviderEnabled(
+            LocationManager.NETWORK_PROVIDER) == true
 
         if (!gpsEnabled && !netEnabled) {
             Toast.makeText(
@@ -576,13 +478,13 @@ class MapFragment : Fragment() {
         }
 
         try {
-            // pakai last known location dulu
             val lastGps = if (gpsEnabled)
                 locationManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             else null
 
             val lastNet = if (netEnabled)
-                locationManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                locationManager?.getLastKnownLocation(
+                    LocationManager.NETWORK_PROVIDER)
             else null
 
             val bestLast = when {
@@ -610,7 +512,6 @@ class MapFragment : Fragment() {
                 }
             }
 
-            // update berkala
             if (gpsEnabled) {
                 locationManager?.requestLocationUpdates(
                     LocationManager.GPS_PROVIDER,
@@ -639,8 +540,6 @@ class MapFragment : Fragment() {
         }
     }
 
-    // ================== NAVIGASI DALAM APLIKASI (ROUTE JARINGAN JALAN) ==================
-
     private fun navigateInsideApp(target: SamplePoint) {
         val start = userLocation
         val map = mapLibre
@@ -656,7 +555,6 @@ class MapFragment : Fragment() {
 
         val end = LatLng(target.latitude, target.longitude)
 
-        // hapus garis lama
         navLine?.let { old ->
             map.removeAnnotation(old)
         }
@@ -719,7 +617,8 @@ class MapFragment : Fragment() {
                     routePoints.forEach { p -> b.include(p) }
                     val bounds = b.build()
                     map.animateCamera(
-                        CameraUpdateFactory.newLatLngBounds(bounds, 80)
+                        CameraUpdateFactory.newLatLngBounds(bounds,
+                            80)
                     )
                 }
 
@@ -733,21 +632,20 @@ class MapFragment : Fragment() {
     private fun showToastOnUi(msg: String) {
         try {
             requireActivity().runOnUiThread {
-                Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), msg,
+                    Toast.LENGTH_SHORT).show()
             }
         } catch (_: IllegalStateException) {
-            // fragment sudah tidak attached
         }
     }
-
-    // ================== EXPORT CSV ==================
 
     private fun exportCsv(uri: Uri) {
         val resolver = requireContext().contentResolver
         resolver.openOutputStream(uri)?.use { os ->
             val writer = OutputStreamWriter(os)
 
-            writer.appendLine("id;kode;p_lahan;kesesuaian;catatan;lat;lon;pdf_uri;foto_uri")
+            writer.appendLine("id;kode;p_lahan;kesesuaian;catatan;" +
+                    "lat;lon;pdf_uri;foto_uri")
 
             DataStore.surveyResponses.forEach { res ->
                 val sp = DataStore.samplePoints.find { it.id == res.samplePointId }
@@ -772,7 +670,8 @@ class MapFragment : Fragment() {
             writer.flush()
         }
 
-        Toast.makeText(requireContext(), "CSV diekspor", Toast.LENGTH_SHORT).show()
+        Toast.makeText(requireContext(), "CSV diekspor",
+            Toast.LENGTH_SHORT).show()
     }
 
     private fun getFileNameFromUri(uriString: String?): String? {
@@ -780,8 +679,6 @@ class MapFragment : Fragment() {
         val uri = Uri.parse(uriString)
         return uri.lastPathSegment
     }
-
-    // ================== LIFECYCLE MAPVIEW ==================
 
     override fun onStart() {
         super.onStart()

@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/main_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <ImageButton
+        android:id="@+id/btnOpenDataList"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="72dp"
+        android:background="#FF673AB7"
+        android:padding="10dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_list"
+        android:contentDescription="Data Survei"
+        android:layout_gravity="top|end" />
+
+</FrameLayout>

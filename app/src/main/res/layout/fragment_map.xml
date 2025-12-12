@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- TOP BAR -->
     <LinearLayout
         android:id="@+id/topBar"
         android:orientation="horizontal"
@@ -41,8 +40,6 @@
 
     </LinearLayout>
 
-
-    <!-- MAP VIEW -->
     <org.maplibre.android.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="0dp"
@@ -53,8 +50,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-
-    <!-- BUTTON LOKASI SAYA -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/btnMyLocation"
         android:layout_width="70dp"
@@ -83,9 +78,6 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-
-
-    <!-- BOTTOM PANEL -->
     <LinearLayout
         android:id="@+id/bottomPanel"
         android:orientation="vertical"
@@ -135,9 +127,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="8dp"
                 android:layout_weight="1"/>
-
         </LinearLayout>
-
     </LinearLayout>
-
 </androidx.constraintlayout.widget.ConstraintLayout>

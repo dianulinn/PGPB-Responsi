@@ -26,11 +26,21 @@ class FormActivity : AppCompatActivity() {
     companion object {
         private const val EXTRA_ID = "sample_id"
         private const val EXTRA_NAME = "sample_name"
+        private const val EXTRA_SURVEY_ID = "survey_id"
 
         fun start(context: Context, id: Long, name: String) {
-            val intent = Intent(context, FormActivity::class.java).apply {
+            val intent = Intent(context,
+                FormActivity::class.java).apply {
                 putExtra(EXTRA_ID, id)
                 putExtra(EXTRA_NAME, name)
+            }
+            context.startActivity(intent)
+        }
+
+        fun startForEdit(context: Context, surveyId: Long) {
+            val intent = Intent(context,
+                FormActivity::class.java).apply {
+                putExtra(EXTRA_SURVEY_ID, surveyId)
             }
             context.startActivity(intent)
         }
@@ -42,21 +52,26 @@ class FormActivity : AppCompatActivity() {
     private var sampleName = ""
     private var fotoUri: Uri? = null
 
-    // ====== IZIN KAMERA ======
+    private var surveyId: Long? = null
+    private var isEditMode: Boolean = false
+
     private val cameraPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(
+            ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) openCamera()
-            else Toast.makeText(this, "Izin kamera ditolak!", Toast.LENGTH_SHORT).show()
+            else Toast.makeText(this, "Izin kamera ditolak!",
+                Toast.LENGTH_SHORT).show()
         }
 
-    // ====== LAUNCHER AMBIL FOTO ======
     private val takePictureLauncher =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
                 binding.imgPreviewFoto.setImageURI(fotoUri)
-                Toast.makeText(this, "Foto berhasil diambil", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Foto berhasil diambil",
+                    Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "Gagal mengambil foto", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Gagal mengambil foto",
+                    Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -66,10 +81,16 @@ class FormActivity : AppCompatActivity() {
         binding = ActivityFormBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        sampleId = intent.getLongExtra(EXTRA_ID, -1L)
-        sampleName = intent.getStringExtra(EXTRA_NAME) ?: ""
-
-        setupUi()
+        val sId = intent.getLongExtra(EXTRA_SURVEY_ID, -1L)
+        if (sId != -1L) {
+            isEditMode = true
+            surveyId = sId
+            loadExistingSurvey(sId)
+        } else {
+            sampleId = intent.getLongExtra(EXTRA_ID, -1L)
+            sampleName = intent.getStringExtra(EXTRA_NAME) ?: ""
+            setupUi()
+        }
     }
 
     private fun setupUi() {
@@ -98,7 +119,38 @@ class FormActivity : AppCompatActivity() {
         binding.btnSimpan.setOnClickListener { saveForm() }
     }
 
-    // ================== KAMERA ==================
+    private fun loadExistingSurvey(id: Long) {
+        val res = DataStore.getSurveyResponseById(id)
+        if (res == null) {
+            Toast.makeText(this, "Data survei tidak ditemukan",
+                Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+
+        sampleId = res.samplePointId
+        val point = DataStore.getSamplePointById(sampleId)
+        sampleName = point?.name ?: "Titik $sampleId"
+
+        setupUi()
+
+        binding.edtKodeSampel.setText(res.kodeSampel)
+
+        val penggunaanAdapter = binding.spinnerPenggunaan.adapter as ArrayAdapter<String>
+        val posPenggunaan = penggunaanAdapter.getPosition(res.penggunaanLahan)
+        if (posPenggunaan >= 0) binding.spinnerPenggunaan.setSelection(posPenggunaan)
+
+        val kesesuaianAdapter = binding.spinnerKesesuaian.adapter as ArrayAdapter<String>
+        val posKesesuaian = kesesuaianAdapter.getPosition(res.kesesuaian)
+        if (posKesesuaian >= 0) binding.spinnerKesesuaian.setSelection(posKesesuaian)
+
+        binding.edtCatatan.setText(res.catatan ?: "")
+
+        res.fotoUri?.let {
+            fotoUri = Uri.parse(it)
+            binding.imgPreviewFoto.setImageURI(fotoUri)
+        }
+    }
 
     private fun checkCameraPermission() {
         val granted = ContextCompat.checkSelfPermission(
@@ -113,7 +165,8 @@ class FormActivity : AppCompatActivity() {
     private fun openCamera() {
         val uri = createImageUri()
         if (uri == null) {
-            Toast.makeText(this, "Gagal menyiapkan media penyimpanan foto", Toast.LENGTH_SHORT)
+            Toast.makeText(this, "Gagal menyiapkan media penyimpanan foto",
+                Toast.LENGTH_SHORT)
                 .show()
             return
         }
@@ -122,12 +175,9 @@ class FormActivity : AppCompatActivity() {
         takePictureLauncher.launch(uri)
     }
 
-    /**
-     * Bikin Uri di MediaStore (folder Pictures/SpotlyApp) supaya
-     * hasil foto otomatis muncul di Galeri.
-     */
     private fun createImageUri(): Uri? {
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss",
+            Locale.getDefault()).format(Date())
         val fileName = "SPOTLY_$timestamp.jpg"
 
         val contentValues = ContentValues().apply {
@@ -148,7 +198,6 @@ class FormActivity : AppCompatActivity() {
         )
     }
 
-    // ================== SIMPAN FORM ==================
 
     private fun saveForm() {
         val kode = binding.edtKodeSampel.text.toString().trim()
@@ -157,21 +206,43 @@ class FormActivity : AppCompatActivity() {
         val catatan = binding.edtCatatan.text.toString().trim()
 
         if (kode.isEmpty()) {
-            Toast.makeText(this, "Kode sampel wajib diisi!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Kode sampel wajib diisi!",
+                Toast.LENGTH_SHORT).show()
             return
         }
 
-        DataStore.addSurveyResponse(
-            samplePointId = sampleId,
-            kodeSampel = kode,
-            penggunaanLahan = penggunaan,
-            kesesuaian = kesesuaian,
-            catatan = if (catatan.isEmpty()) null else catatan,
-            // ini sekarang Uri ke MediaStore (bisa dibuka Galeri)
-            fotoUri = fotoUri?.toString()
-        )
+        val catatanOrNull = if (catatan.isEmpty()) null else catatan
+        val fotoString = fotoUri?.toString()
 
-        Toast.makeText(this, "Data tersimpan!", Toast.LENGTH_SHORT).show()
+        if (isEditMode && surveyId != null) {
+            val ok = DataStore.updateSurveyResponse(
+                id = surveyId!!,
+                kodeSampel = kode,
+                penggunaanLahan = penggunaan,
+                kesesuaian = kesesuaian,
+                catatan = catatanOrNull,
+                fotoUri = fotoString
+            )
+            if (!ok) {
+                Toast.makeText(this, "Gagal mengupdate data",
+                    Toast.LENGTH_SHORT).show()
+                return
+            }
+            Toast.makeText(this, "Data diperbarui!",
+                Toast.LENGTH_SHORT).show()
+        } else {
+            DataStore.addSurveyResponse(
+                samplePointId = sampleId,
+                kodeSampel = kode,
+                penggunaanLahan = penggunaan,
+                kesesuaian = kesesuaian,
+                catatan = catatanOrNull,
+                fotoUri = fotoString
+            )
+            Toast.makeText(this, "Data tersimpan!",
+                Toast.LENGTH_SHORT).show()
+        }
+
         finish()
     }
 }

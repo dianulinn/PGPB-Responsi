@@ -1,9 +1,9 @@
 package com.example.spotlyapp
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import com.example.spotlyapp.databinding.ActivityMainBinding
-import org.maplibre.android.MapLibre   // <-- tambah ini
+import org.maplibre.android.MapLibre
 
 class MainActivity : AppCompatActivity() {
 
@@ -12,7 +12,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // WAJIB: init MapLibre sebelum pakai MapView
         MapLibre.getInstance(this)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -20,8 +19,13 @@ class MainActivity : AppCompatActivity() {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .replace(binding.mainContainer.id, MapFragment.newInstance())
+                .replace(binding.mainContainer.id,
+                    MapFragment.newInstance())
                 .commit()
+        }
+
+        binding.btnOpenDataList.setOnClickListener {
+            DataListActivity.start(this)
         }
     }
 }

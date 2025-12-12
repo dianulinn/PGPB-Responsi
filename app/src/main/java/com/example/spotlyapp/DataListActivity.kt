@@ -22,7 +22,8 @@ class DataListActivity : AppCompatActivity() {
 
     companion object {
         fun start(context: Context) {
-            val intent = Intent(context, DataListActivity::class.java)
+            val intent = Intent(context,
+                DataListActivity::class.java)
             context.startActivity(intent)
         }
     }
@@ -41,22 +42,13 @@ class DataListActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // refresh data setiap kali balik ke activity ini
         loadData()
     }
 
     private fun setupRecycler() {
         adapter = SurveyAdapter(
             onEditClick = { item ->
-                // EDIT: di sini logikanya: buka FormActivity lagi untuk titik terkait
-                // Saat ini FormActivity belum support "edit", tapi minimal bisa isi ulang.
-                val point = DataStore.samplePoints.find { it.id == item.samplePointId }
-                if (point == null) {
-                    Toast.makeText(this, "Titik tidak ditemukan", Toast.LENGTH_SHORT).show()
-                    return@SurveyAdapter
-                }
-
-                FormActivity.start(this, point.id, point.name)
+                FormActivity.startForEdit(this, item.surveyId)
             },
             onDeleteClick = { item ->
                 confirmDelete(item)
@@ -68,12 +60,9 @@ class DataListActivity : AppCompatActivity() {
     }
 
     private fun loadData() {
-        // gabungkan surveyResponses + samplePoints → list tampilan
         val items = DataStore.surveyResponses.mapNotNull { res ->
             val sp = DataStore.samplePoints.find { it.id == res.samplePointId }
-            if (sp == null) {
-                null
-            } else {
+            if (sp == null) null else {
                 SurveyItem(
                     surveyId = res.id,
                     samplePointId = sp.id,
@@ -85,28 +74,29 @@ class DataListActivity : AppCompatActivity() {
                 )
             }
         }
-
         adapter.submitList(items)
     }
 
     private fun confirmDelete(item: SurveyItem) {
         AlertDialog.Builder(this)
             .setTitle("Hapus Data")
-            .setMessage("Yakin mau hapus data kode \"${item.kodeSampel}\" di titik \"${item.pointName}\"?")
+            .setMessage(
+                "Yakin mau hapus data kode \"${item.kodeSampel}\" di titik \"${item.pointName}\"?"
+            )
             .setPositiveButton("Hapus") { _, _ ->
                 val success = DataStore.deleteSurveyResponseById(item.surveyId)
                 if (success) {
-                    Toast.makeText(this, "Data dihapus", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Data dihapus",
+                        Toast.LENGTH_SHORT).show()
                     loadData()
                 } else {
-                    Toast.makeText(this, "Gagal menghapus data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Gagal menghapus data",
+                        Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Batal", null)
             .show()
     }
-
-    // ===================== ADAPTER =====================
 
     data class SurveyItem(
         val surveyId: Long,
@@ -133,7 +123,8 @@ class DataListActivity : AppCompatActivity() {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveyViewHolder {
             val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_survey_row, parent, false)
+                .inflate(R.layout.item_survey_row, parent,
+                    false)
             return SurveyViewHolder(view)
         }
 
@@ -163,22 +154,22 @@ class DataListActivity : AppCompatActivity() {
                 txtPenggunaan.text = "Penggunaan: ${item.penggunaanLahan}"
                 txtKesesuaian.text = "Kesesuaian: ${item.kesesuaian}"
 
-                // kalau tidak ada foto → icon disembunyikan / di-gray-out
                 if (item.fotoUri.isNullOrEmpty()) {
                     imgFotoIcon.alpha = 0.3f
                 } else {
                     imgFotoIcon.alpha = 1.0f
-                    // opsional: klik icon foto untuk buka foto
                     imgFotoIcon.setOnClickListener {
                         val ctx = it.context
                         try {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(item.fotoUri), "image/*")
+                                setDataAndType(Uri.parse(item.fotoUri),
+                                    "image/*")
                                 flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
                             }
                             ctx.startActivity(intent)
                         } catch (_: Exception) {
-                            Toast.makeText(ctx, "Tidak bisa membuka foto", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(ctx, "Tidak bisa membuka foto",
+                                Toast.LENGTH_SHORT).show()
                         }
                     }
                 }

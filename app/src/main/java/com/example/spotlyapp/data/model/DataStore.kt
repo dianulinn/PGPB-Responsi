@@ -3,15 +3,7 @@ package com.example.spotlyapp.data
 import com.example.spotlyapp.data.model.SamplePoint
 import com.example.spotlyapp.data.model.SurveyResponse
 
-/**
- * Penyimpanan data sederhana (in-memory).
- * Tidak menggunakan database agar ekspor CSV tetap mudah.
- */
 object DataStore {
-
-    // ============================
-    // DATA TITIK SAMPEL
-    // ============================
     val samplePoints = mutableListOf<SamplePoint>()
     private var samplePointAutoId = 1L
 
@@ -32,10 +24,10 @@ object DataStore {
         return point
     }
 
+    fun getSamplePointById(id: Long): SamplePoint? {
+        return samplePoints.find { it.id == id }
+    }
 
-    // ============================
-    // DATA FORM / SURVEY RESPONSE
-    // ============================
     val surveyResponses = mutableListOf<SurveyResponse>()
     private var surveyAutoId = 1L
 
@@ -60,12 +52,31 @@ object DataStore {
         return response
     }
 
-    // contoh skema DataStore kamu kurang lebih kayak gini:
-// object DataStore {
-//     val samplePoints = mutableListOf<SamplePoint>()
-//     val surveyResponses = mutableListOf<SurveyResponse>()
-//     ...
-// }
+    fun getSurveyResponseById(id: Long): SurveyResponse? {
+        return surveyResponses.find { it.id == id }
+    }
+
+    fun updateSurveyResponse(
+        id: Long,
+        kodeSampel: String,
+        penggunaanLahan: String,
+        kesesuaian: String,
+        catatan: String?,
+        fotoUri: String?
+    ): Boolean {
+        val index = surveyResponses.indexOfFirst { it.id == id }
+        if (index == -1) return false
+
+        val old = surveyResponses[index]
+        surveyResponses[index] = old.copy(
+            kodeSampel = kodeSampel,
+            penggunaanLahan = penggunaanLahan,
+            kesesuaian = kesesuaian,
+            catatan = catatan,
+            fotoUri = fotoUri ?: old.fotoUri
+        )
+        return true
+    }
 
     fun deleteSurveyResponseById(id: Long): Boolean {
         val iterator = surveyResponses.iterator()
